@@ -35,53 +35,48 @@ ALGORITHM
 2. Insert each element into min_heap using heappush.
 3. Insert the negative of each element into max_heap.
 4. Print both heaps (negate the values to show the Max Heap).
-5. To delete an element, remove it from the list.
+5. To delete an element, remove it from both lists.
 6. Call heapify to restore the heap property.
 7. Print both heaps again.
 
 PROGRAM
 -------
-  import heapq
+import heapq
 
-  min_heap = []
-  max_heap = []          # max heap is stored as negative numbers
+min_heap, max_heap = [], []
+elements = [40, 10, 30, 50, 20]
+print("Inserting elements:", elements)
 
-  elements = [40, 10, 30, 50, 20]
-  print("Inserting elements:", elements)
+for e in elements:
+    heapq.heappush(min_heap, e)
+    heapq.heappush(max_heap, -e)      # max heap stored as negatives
 
-  for e in elements:
-      heapq.heappush(min_heap, e)
-      heapq.heappush(max_heap, -e)
+print("Min Heap:", min_heap)
+print("Max Heap:", [-x for x in max_heap])
 
-  print("Min Heap:", min_heap)
-  print("Max Heap:", [-x for x in max_heap])
+val = 30
+print(f"\nDeleting {val}...")
+min_heap.remove(val)
+max_heap.remove(-val)
+heapq.heapify(min_heap)
+heapq.heapify(max_heap)
 
-  val = 30
-  print(f"\nDeleting {val}...")
-
-  min_heap.remove(val)
-  heapq.heapify(min_heap)
-
-  max_heap.remove(-val)
-  heapq.heapify(max_heap)
-
-  print("Min Heap after deletion:", min_heap)
-  print("Max Heap after deletion:", [-x for x in max_heap])
+print("Min Heap after deletion:", min_heap)
+print("Max Heap after deletion:", [-x for x in max_heap])
 
 OUTPUT
 ------
-  Inserting elements: [40, 10, 30, 50, 20]
-  Min Heap: [10, 20, 30, 50, 40]
-  Max Heap: [50, 40, 30, 10, 20]
+Inserting elements: [40, 10, 30, 50, 20]
+Min Heap: [10, 20, 30, 50, 40]
+Max Heap: [50, 40, 30, 10, 20]
 
-  Deleting 30...
-  Min Heap after deletion: [10, 20, 50, 40]
-  Max Heap after deletion: [50, 40, 10, 20]
+Deleting 30...
+Min Heap after deletion: [10, 20, 50, 40]
+Max Heap after deletion: [50, 40, 10, 20]
 
 RESULT
-------
 The Min Heap and Max Heap were constructed using arrays, an element
-was deleted, and the contents of both heaps were displayed.
+was deleted, and the contents of both heaps were displayed
 
 
 ==============================================================
@@ -133,63 +128,55 @@ ALGORITHM
 
 PROGRAM
 -------
-  from collections import defaultdict
+from collections import defaultdict
 
-  graph = defaultdict(list)
-  n = 5
-  edges = [(0,1), (1,2), (2,0), (1,3), (3,4)]
+graph = defaultdict(list)
+for u, v in [(0,1), (1,2), (2,0), (1,3), (3,4)]:
+    graph[u].append(v)
+    graph[v].append(u)
 
-  for u, v in edges:
-      graph[u].append(v)
-      graph[v].append(u)
+n = 5
+disc, low = [-1] * n, [-1] * n
+stack, components, timer = [], [], [0]
 
-  disc = [-1] * n      # discovery time
-  low = [-1] * n       # lowest reachable discovery time
-  stack = []           # stack of edges
-  components = []
-  time = 0
+def dfs(u, parent):
+    disc[u] = low[u] = timer[0]
+    timer[0] += 1
+    for v in graph[u]:
+        if disc[v] == -1:
+            stack.append((u, v))
+            dfs(v, u)
+            low[u] = min(low[u], low[v])
+            if low[v] >= disc[u]:             # u is an articulation point
+                comp = []
+                while True:
+                    e = stack.pop()
+                    comp.append(e)
+                    if e == (u, v):
+                        break
+                components.append(comp)
+        elif v != parent and disc[v] < disc[u]:   # back edge
+            stack.append((u, v))
+            low[u] = min(low[u], disc[v])
 
-  def dfs(u, parent):
-      global time
-      disc[u] = low[u] = time
-      time += 1
+for i in range(n):
+    if disc[i] == -1:
+        dfs(i, -1)
 
-      for v in graph[u]:
-          if disc[v] == -1:                 # v not visited
-              stack.append((u, v))
-              dfs(v, u)
-              low[u] = min(low[u], low[v])
-
-              if low[v] >= disc[u]:         # u separates this part -> one component
-                  comp = []
-                  while True:
-                      e = stack.pop()
-                      comp.append(e)
-                      if e == (u, v):
-                          break
-                  components.append(comp)
-
-          elif v != parent and disc[v] < disc[u]:   # back edge
-              stack.append((u, v))
-              low[u] = min(low[u], disc[v])
-
-  for i in range(n):
-      if disc[i] == -1:
-          dfs(i, -1)
-
-  for i, comp in enumerate(components, 1):
-      print(f"Biconnected Component {i}: {comp}")
+for i, comp in enumerate(components, 1):
+    print(f"Biconnected Component {i}: {comp}")
 
 OUTPUT
 ------
-  Biconnected Component 1: [(3, 4)]
-  Biconnected Component 2: [(1, 3)]
-  Biconnected Component 3: [(2, 0), (1, 2), (0, 1)]
+Biconnected Component 1: [(3, 4)]
+Biconnected Component 2: [(1, 3)]
+Biconnected Component 3: [(2, 0), (1, 2), (0, 1)]
 
 RESULT
 ------
 The bi-connected components of the given graph were found
 successfully using DFS.
+
 
 
 ==============================================================
@@ -238,66 +225,47 @@ ALGORITHM
 
 PROGRAM
 -------
-  import heapq
+import heapq
 
-  # Adjacency Matrix (0 = no edge)
-  matrix = [
-      [0, 2, 0, 6, 0],
-      [2, 0, 3, 8, 5],
-      [0, 3, 0, 0, 7],
-      [6, 8, 0, 0, 9],
-      [0, 5, 7, 9, 0]
-  ]
+matrix = [[0, 2, 0, 6, 0],
+          [2, 0, 3, 8, 5],
+          [0, 3, 0, 0, 7],
+          [6, 8, 0, 0, 9],
+          [0, 5, 7, 9, 0]]
 
-  # Adjacency List (neighbor, weight)
-  alist = [
-      [(1, 2), (3, 6)],
-      [(0, 2), (2, 3), (4, 5)],
-      [(1, 3), (4, 7)],
-      [(0, 6), (1, 8), (4, 9)],
-      [(1, 5), (2, 7), (3, 9)]
-  ]
+alist = [[(1, 2), (3, 6)],
+         [(0, 2), (2, 3), (4, 5)],
+         [(1, 3), (4, 7)],
+         [(0, 6), (1, 8), (4, 9)],
+         [(1, 5), (2, 7), (3, 9)]]
 
-  def dijkstra_matrix(graph, src):
-      n = len(graph)
-      dist = [float('inf')] * n
-      dist[src] = 0
-      pq = [(0, src)]
-      while pq:
-          d, u = heapq.heappop(pq)
-          if d > dist[u]:
-              continue
-          for v in range(n):                      # scan the whole row
-              if graph[u][v] != 0 and d + graph[u][v] < dist[v]:
-                  dist[v] = d + graph[u][v]
-                  heapq.heappush(pq, (dist[v], v))
-      return dist
+def dijkstra(neighbors, n, src):
+    dist = [float('inf')] * n
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d > dist[u]:
+            continue
+        for v, w in neighbors(u):
+            if d + w < dist[v]:
+                dist[v] = d + w
+                heapq.heappush(pq, (dist[v], v))
+    return dist
 
-  def dijkstra_list(graph, src):
-      n = len(graph)
-      dist = [float('inf')] * n
-      dist[src] = 0
-      pq = [(0, src)]
-      while pq:
-          d, u = heapq.heappop(pq)
-          if d > dist[u]:
-              continue
-          for v, w in graph[u]:                   # only real neighbors
-              if d + w < dist[v]:
-                  dist[v] = d + w
-                  heapq.heappush(pq, (dist[v], v))
-      return dist
+# matrix: scan the whole row; list: only real neighbours
+nb_matrix = lambda u: [(v, w) for v, w in enumerate(matrix[u]) if w != 0]
+nb_list = lambda u: alist[u]
 
-  source = 0
-  print("Shortest distances from node", source)
-  print("Adjacency Matrix distances:", dijkstra_matrix(matrix, source))
-  print("Adjacency List distances:  ", dijkstra_list(alist, source))
+print("Shortest distances from node 0")
+print("Adjacency Matrix distances:", dijkstra(nb_matrix, 5, 0))
+print("Adjacency List distances:  ", dijkstra(nb_list, 5, 0))
 
 OUTPUT
 ------
-  Shortest distances from node 0
-  Adjacency Matrix distances: [0, 2, 5, 6, 7]
-  Adjacency List distances:   [0, 2, 5, 6, 7]
+Shortest distances from node 0
+Adjacency Matrix distances: [0, 2, 5, 6, 7]
+Adjacency List distances:   [0, 2, 5, 6, 7]
 
 RESULT
 ------
@@ -305,6 +273,7 @@ The shortest paths were found using both the adjacency matrix and
 the adjacency list. Both gave the same distances. The adjacency
 list with a heap is faster for sparse graphs, and the adjacency
 matrix suits dense graphs.
+
 
 
 ==============================================================
@@ -356,34 +325,28 @@ Total value = 60 + 100 + 80 = 240
 
 PROGRAM
 -------
-  def fractional_knapsack(values, weights, capacity):
-      # Step 1: sort items by value/weight ratio (highest first)
-      items = sorted(zip(values, weights), key=lambda x: x[0] / x[1], reverse=True)
+def fractional_knapsack(values, weights, capacity):
+    items = sorted(zip(values, weights), key=lambda x: x[0] / x[1], reverse=True)
+    total = 0.0
+    for v, w in items:
+        take = min(w, capacity)           # whole item or the fraction that fits
+        total += v * take / w
+        capacity -= take
+    return total
 
-      total_value = 0.0
-      for v, w in items:
-          if capacity >= w:                 # take the whole item
-              capacity -= w
-              total_value += v
-          else:                             # take a fraction and stop
-              total_value += v * capacity / w
-              break
-      return total_value
-
-  values = [60, 100, 120]
-  weights = [10, 20, 30]
-  capacity = 50
-
-  print("Maximum value in Knapsack =", fractional_knapsack(values, weights, capacity))
+values = [60, 100, 120]
+weights = [10, 20, 30]
+print("Maximum value in Knapsack =", fractional_knapsack(values, weights, 50))
 
 OUTPUT
 ------
-  Maximum value in Knapsack = 240.0
+Maximum value in Knapsack = 240.0
 
 RESULT
 ------
 The optimal solution of the Knapsack problem was found using the
 Greedy strategy. The maximum value is 240.
+
 
 
 ==============================================================
@@ -424,42 +387,38 @@ ALGORITHM
 
 PROGRAM
 -------
-  def is_safe(queens, row, col):
-      # queens[c] = row of the queen placed in column c
-      for c in range(col):
-          r = queens[c]
-          if r == row or abs(r - row) == abs(c - col):   # same row or same diagonal
-              return False
-      return True
+def is_safe(board, row, col, n):
+    for i in range(n):
+        for j in range(col):
+            if board[i][j] and (i == row or abs(i - row) == abs(j - col)):
+                return False
+    return True
 
-  def solve(queens, col, n):
-      if col == n:                      # all queens placed
-          return True
-      for row in range(n):
-          if is_safe(queens, row, col):
-              queens[col] = row         # place queen
-              if solve(queens, col + 1, n):
-                  return True
-              # otherwise backtrack and try the next row
-      return False
+def solve(board, col, n):
+    if col == n:
+        return True
+    for row in range(n):
+        if is_safe(board, row, col, n):
+            board[row][col] = 1
+            if solve(board, col + 1, n):
+                return True
+            board[row][col] = 0           # backtrack
+    return False
 
-  def print_board(queens, n):
-      for r in range(n):
-          print(" ".join('Q' if queens[c] == r else '.' for c in range(n)))
-
-  n = 4
-  queens = [-1] * n
-  if solve(queens, 0, n):
-      print_board(queens, n)
-  else:
-      print("No solution exists")
+n = 4
+board = [[0] * n for _ in range(n)]
+if solve(board, 0, n):
+    for r in board:
+        print(" ".join('Q' if x else '.' for x in r))
+else:
+    print("No solution exists")
 
 OUTPUT
 ------
-  . . Q .
-  Q . . .
-  . . . Q
-  . Q . .
+. . Q .
+Q . . .
+. . . Q
+. Q . .
 
 RESULT
 ------
@@ -467,6 +426,93 @@ Four queens were placed on a 4 x 4 board so that no two queens
 attack each other, using the Backtracking strategy.
 
 
+
 ==============================================================
-                        END OF MANUAL
+EXPERIMENT 12
+TRAVELLING SALES PERSON PROBLEM USING BRANCH AND BOUND
 ==============================================================
+
+AIM
+---
+To implement the Travelling Sales Person (TSP) problem using the
+Branch and Bound approach.
+
+THEORY
+------
+The Travelling Sales Person problem is to find the shortest tour
+that visits every city exactly once and returns to the starting
+city.
+
+Branch and Bound:
+  - BRANCH: Build the tour city by city. Every choice of the next
+    city creates a new branch.
+  - BOUND: Keep the cost of the best complete tour found so far.
+    If the cost of a partial tour is already greater than or equal
+    to this best cost, that branch cannot give a better answer, so
+    it is cut off (pruned).
+
+Pruning avoids checking many useless tours. The worst case is
+still O(n!), but it is usually much faster than checking every
+tour.
+
+ALGORITHM
+---------
+1. Start from city 0 with cost 0 and best cost = infinity.
+2. If the current cost is >= best cost, stop (prune).
+3. If all cities are visited, add the cost of returning to city 0.
+   If it is less than the best cost, save it as the new best.
+4. Otherwise, try every unvisited city as the next city and repeat
+   from step 2.
+5. Print the minimum cost and the path.
+
+SAMPLE DATASET (Cost Matrix)
+----------------------------
+      | 0  | 1  | 2  | 3
+------|----|----|----|----
+  0   | 0  | 10 | 15 | 20
+  1   | 10 | 0  | 35 | 25
+  2   | 15 | 35 | 0  | 30
+  3   | 20 | 25 | 30 | 0
+
+Tour 0 -> 1 -> 3 -> 2 -> 0 = 10 + 25 + 30 + 15 = 80
+
+PROGRAM
+-------
+import math
+
+graph = [[0, 10, 15, 20],
+         [10, 0, 35, 25],
+         [15, 35, 0, 30],
+         [20, 25, 30, 0]]
+n = len(graph)
+best = [math.inf, ()]
+
+def branch_and_bound(path, cost):
+    if cost >= best[0]:                   # bound: cannot beat best, prune
+        return
+    if len(path) == n:                    # all cities visited, return to start
+        total = cost + graph[path[-1]][0]
+        if total < best[0]:
+            best[:] = [total, tuple(path) + (0,)]
+        return
+    for city in range(n):                 # branch: try each unvisited city
+        if city not in path:
+            branch_and_bound(path + [city], cost + graph[path[-1]][city])
+
+branch_and_bound([0], 0)
+print("Minimum cost:", best[0])
+print("Path:", best[1])
+
+OUTPUT
+------
+Minimum cost: 80
+Path: (0, 1, 3, 2, 0)
+
+RESULT
+------
+The TSP problem was solved using Branch and Bound. The minimum
+cost of the tour is 80 and the path is 0 -> 1 -> 3 -> 2 -> 0.
+
+------
+The Min Heap and Max Heap were constructed using arrays, an element
+was deleted, and the contents of both heaps were displayed.
