@@ -1,545 +1,852 @@
-# dwdm
-
-
-
-
 ==============================================================
-EXPERIMENT 6
-DEMONSTRATION OF MINING FREQUENT PATTERNS USING APRIORI ALGORITHM
+EXPERIMENT 1
+AVL TREE: INSERTION, DELETION AND INORDER TRAVERSAL
 ==============================================================
 
 AIM
 ---
-To demonstrate the mining of frequent patterns using the Apriori
-algorithm.
+To construct an AVL tree for a given set of elements stored in a
+file, implement insert and delete operations on the tree, and
+write the contents of the tree into a new file using inorder
+traversal.
 
 THEORY
 ------
-The Apriori algorithm is a data mining algorithm used for association
-rule mining. It identifies frequent itemsets in transactional
-databases and generates association rules from them.
+An AVL tree is a self-balancing Binary Search Tree. For every
+node, the difference between the heights of the left and right
+subtrees (the balance factor) must be -1, 0 or 1.
 
-It uses two important measures:
-  - Support: Indicates how frequently an itemset appears in the
-    dataset.
-  - Confidence: Indicates how often item Y appears in transactions
-    containing item X for a rule X -> Y.
+  Balance factor = height(left) - height(right)
 
-Apriori is commonly used in market basket analysis. For example,
-customers who buy milk may also buy bread.
+If the balance factor goes outside this range after an insertion
+or deletion, the tree is balanced using rotations:
 
-PROCEDURE IN WEKA
------------------
-1. Open the WEKA application.
-2. Select Explorer.
-3. Load the transactional dataset using Preprocess -> Open file.
-4. Select the Associate tab.
-5. Click Choose and select weka.associations.Apriori.
-6. Configure the parameters:
-     - Minimum support    : 0.20
-     - Minimum confidence : 0.60
-     - Number of rules    : 100
-7. Click OK.
-8. Click Start to execute the algorithm.
-9. Observe the frequent itemsets and association rules in the output.
+  Case         | Condition                     | Fix
+  -------------|-------------------------------|---------------------
+  Left-Left    | balance > 1, key < left.key   | Right rotation
+  Right-Right  | balance < -1, key > right.key | Left rotation
+  Left-Right   | balance > 1, key > left.key   | Left, then Right
+  Right-Left   | balance < -1, key < right.key | Right, then Left
 
-SAMPLE DATASET
---------------
-Transaction | Items Purchased
-------------|-------------------------
-T1          | Milk, Bread, Butter
-T2          | Milk, Bread
-T3          | Bread, Butter
-T4          | Milk, Bread, Butter
-T5          | Milk, Butter
+Inorder traversal (Left, Root, Right) of a BST gives the keys in
+sorted order.
 
-SAMPLE CALCULATION
-------------------
-For the itemset {Milk, Bread}:
-  - Total transactions = 5
-  - Transactions containing both Milk and Bread = 3
+Time complexity: O(log n) for insert and delete.
 
-  Support = (3 / 5) x 100 = 60%
+ALGORITHM
+---------
+1. Read the elements from the input file.
+2. Insert each element as in a normal BST.
+3. Update the height of every node on the path back to the root.
+4. Calculate the balance factor. If it is out of range, perform
+   the required rotation.
+5. To delete a key:
+     a. Find the node.
+     b. If it has two children, replace it with its inorder
+        successor (smallest node in the right subtree).
+     c. Update heights and re-balance as in step 4.
+6. Do an inorder traversal and write the result into the output
+   file.
 
-If 3 out of 4 Milk transactions also contain Bread:
+INPUT FILE (input.txt)
+----------------------
+  10 20 30 40 50 25
 
-  Confidence = (3 / 4) x 100 = 75%
+PROGRAM
+-------
+  class Node:
+      def __init__(self, key):
+          self.key = key
+          self.left = None
+          self.right = None
+          self.height = 1
 
-Therefore, the association rule Milk -> Bread has 60% support and
-75% confidence in this sample dataset.
+  class AVLTree:
+      def get_height(self, root):
+          return 0 if not root else root.height
+
+      def get_balance(self, root):
+          return 0 if not root else self.get_height(root.left) - self.get_height(root.right)
+
+      def right_rotate(self, y):
+          x = y.left
+          T2 = x.right
+          x.right = y
+          y.left = T2
+          y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
+          x.height = 1 + max(self.get_height(x.left), self.get_height(x.right))
+          return x
+
+      def left_rotate(self, x):
+          y = x.right
+          T2 = y.left
+          y.left = x
+          x.right = T2
+          x.height = 1 + max(self.get_height(x.left), self.get_height(x.right))
+          y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
+          return y
+
+      def insert(self, root, key):
+          if not root:
+              return Node(key)
+          elif key < root.key:
+              root.left = self.insert(root.left, key)
+          elif key > root.key:
+              root.right = self.insert(root.right, key)
+          else:
+              return root                      # duplicate not allowed
+
+          root.height = 1 + max(self.get_height(root.left), self.get_height(root.right))
+          balance = self.get_balance(root)
+
+          if balance > 1 and key < root.left.key:        # Left-Left
+              return self.right_rotate(root)
+          if balance < -1 and key > root.right.key:      # Right-Right
+              return self.left_rotate(root)
+          if balance > 1 and key > root.left.key:        # Left-Right
+              root.left = self.left_rotate(root.left)
+              return self.right_rotate(root)
+          if balance < -1 and key < root.right.key:      # Right-Left
+              root.right = self.right_rotate(root.right)
+              return self.left_rotate(root)
+          return root
+
+      def min_value_node(self, node):
+          current = node
+          while current.left:
+              current = current.left
+          return current
+
+      def delete(self, root, key):
+          if not root:
+              return root
+          elif key < root.key:
+              root.left = self.delete(root.left, key)
+          elif key > root.key:
+              root.right = self.delete(root.right, key)
+          else:
+              if not root.left:
+                  return root.right
+              elif not root.right:
+                  return root.left
+              temp = self.min_value_node(root.right)
+              root.key = temp.key
+              root.right = self.delete(root.right, temp.key)
+
+          root.height = 1 + max(self.get_height(root.left), self.get_height(root.right))
+          balance = self.get_balance(root)
+
+          if balance > 1 and self.get_balance(root.left) >= 0:
+              return self.right_rotate(root)
+          if balance > 1 and self.get_balance(root.left) < 0:
+              root.left = self.left_rotate(root.left)
+              return self.right_rotate(root)
+          if balance < -1 and self.get_balance(root.right) <= 0:
+              return self.left_rotate(root)
+          if balance < -1 and self.get_balance(root.right) > 0:
+              root.right = self.right_rotate(root.right)
+              return self.left_rotate(root)
+          return root
+
+      def inorder(self, root, result):
+          if root:
+              self.inorder(root.left, result)
+              result.append(root.key)
+              self.inorder(root.right, result)
+
+  # create the input file with the elements
+  with open("input.txt", "w") as f:
+      f.write("10 20 30 40 50 25")
+
+  # read the elements from the file
+  with open("input.txt") as f:
+      elements = list(map(int, f.read().split()))
+
+  avl = AVLTree()
+  root = None
+
+  print("Elements read from file:", elements)
+  for num in elements:
+      root = avl.insert(root, num)
+
+  insert_val = 15
+  print("Inserting element:", insert_val)
+  root = avl.insert(root, insert_val)
+
+  delete_val = 20
+  print("Deleting element:", delete_val)
+  root = avl.delete(root, delete_val)
+
+  inorder_result = []
+  avl.inorder(root, inorder_result)
+
+  with open("output.txt", "w") as f:
+      f.write(" ".join(map(str, inorder_result)))
+
+  print("Final AVL Tree (Inorder):", inorder_result)
+  print("Written to output.txt")
+
+OUTPUT
+------
+  Elements read from file: [10, 20, 30, 40, 50, 25]
+  Inserting element: 15
+  Deleting element: 20
+  Final AVL Tree (Inorder): [10, 15, 25, 30, 40, 50]
+  Written to output.txt
+
+OUTPUT FILE (output.txt)
+------------------------
+  10 15 25 30 40 50
 
 RESULT
 ------
-The Apriori algorithm was executed successfully in WEKA to identify
-frequent itemsets and generate association rules using support and
-confidence.
+The AVL tree was constructed from the elements in the file. Insert
+and delete operations were performed with balancing, and the inorder
+traversal was written to output.txt.
+
+
+==============================================================
+EXPERIMENT 3
+BREADTH FIRST AND DEPTH FIRST TRAVERSAL OF A GRAPH
+==============================================================
+
+AIM
+---
+To implement Breadth First Traversal (BFT) and Depth First
+Traversal (DFT) for a given graph when the graph is represented by
+a) an adjacency matrix and b) adjacency lists.
+
+THEORY
+------
+BFT visits all the neighbours of a vertex before going deeper. It
+uses a QUEUE.
+DFT goes as deep as possible along a path before backtracking. It
+uses RECURSION (or a STACK).
+
+Graph representations:
+  - Adjacency Matrix: A V x V matrix. matrix[i][j] = 1 if there is
+    an edge from i to j. Space: O(V^2).
+  - Adjacency List: For each vertex, a list of its neighbours.
+    Space: O(V + E).
+
+Time complexity of BFT and DFT:
+  - Adjacency Matrix : O(V^2)
+  - Adjacency List   : O(V + E)
+
+The graph used here:
+
+      0
+     / \
+    1   2
+     \ /
+      3
+
+ALGORITHM
+---------
+BFT:
+1. Mark the start vertex visited and add it to the queue.
+2. Remove a vertex from the queue and print it.
+3. Add all its unvisited neighbours to the queue and mark them
+   visited.
+4. Repeat steps 2 and 3 until the queue is empty.
+
+DFT:
+1. Mark the start vertex visited and print it.
+2. For each unvisited neighbour, call DFT recursively.
+3. Return when all neighbours are visited.
+
+PROGRAM
+-------
+  from collections import deque
+
+  # ---------- a) Adjacency Matrix ----------
+  graph_matrix = [
+      [0, 1, 1, 0],
+      [1, 0, 0, 1],
+      [1, 0, 0, 1],
+      [0, 1, 1, 0]
+  ]
+
+  def bft_matrix(graph, start):
+      n = len(graph)
+      visited = [False] * n
+      queue = deque([start])
+      visited[start] = True
+      while queue:
+          v = queue.popleft()
+          print(v, end=' ')
+          for i in range(n):
+              if graph[v][i] == 1 and not visited[i]:
+                  queue.append(i)
+                  visited[i] = True
+
+  def dft_matrix(graph, start, visited=None):
+      if visited is None:
+          visited = [False] * len(graph)
+      visited[start] = True
+      print(start, end=' ')
+      for i in range(len(graph)):
+          if graph[start][i] == 1 and not visited[i]:
+              dft_matrix(graph, i, visited)
+
+  print("BFT (Adjacency Matrix):")
+  bft_matrix(graph_matrix, 0)
+  print("\nDFT (Adjacency Matrix):")
+  dft_matrix(graph_matrix, 0)
+
+  # ---------- b) Adjacency List ----------
+  graph_list = {
+      0: [1, 2],
+      1: [0, 3],
+      2: [0, 3],
+      3: [1, 2]
+  }
+
+  def bft_list(graph, start):
+      visited = set([start])
+      queue = deque([start])
+      while queue:
+          v = queue.popleft()
+          print(v, end=' ')
+          for neighbor in graph[v]:
+              if neighbor not in visited:
+                  visited.add(neighbor)
+                  queue.append(neighbor)
+
+  def dft_list(graph, start, visited=None):
+      if visited is None:
+          visited = set()
+      visited.add(start)
+      print(start, end=' ')
+      for neighbor in graph[start]:
+          if neighbor not in visited:
+              dft_list(graph, neighbor, visited)
+
+  print("\n\nBFT (Adjacency List):")
+  bft_list(graph_list, 0)
+  print("\nDFT (Adjacency List):")
+  dft_list(graph_list, 0)
+  print()
+
+OUTPUT
+------
+  BFT (Adjacency Matrix):
+  0 1 2 3 
+  DFT (Adjacency Matrix):
+  0 1 3 2 
+
+  BFT (Adjacency List):
+  0 1 2 3 
+  DFT (Adjacency List):
+  0 1 3 2 
+
+RESULT
+------
+BFT and DFT were implemented for the graph using both an adjacency
+matrix and adjacency lists. Both representations gave the same
+traversal order.
+
+
+==============================================================
+EXPERIMENT 5
+QUICK SORT AND MERGE SORT: EXECUTION TIME ANALYSIS
+==============================================================
+
+AIM
+---
+To implement Quick Sort and Merge Sort and observe the execution
+time for various input sizes (Average, Worst and Best cases).
+
+THEORY
+------
+Quick Sort: Picks a pivot, divides the array into elements
+smaller than, equal to and greater than the pivot, and sorts the
+parts recursively. (Divide and Conquer)
+
+Merge Sort: Divides the array into two halves, sorts each half
+recursively and merges the sorted halves. (Divide and Conquer)
+
+  Algorithm   | Best       | Average    | Worst      | Space
+  ------------|------------|------------|------------|-------
+  Quick Sort  | O(n log n) | O(n log n) | O(n^2)     | O(log n)
+  Merge Sort  | O(n log n) | O(n log n) | O(n log n) | O(n)
+
+  - Quick Sort is O(n^2) in the worst case when the pivot is
+    always the smallest or largest element (for example, first or
+    last element as pivot on sorted data).
+  - Merge Sort is always O(n log n) because it always splits the
+    array exactly in half.
+  - The program here uses the MIDDLE element as pivot, so sorted
+    and reverse-sorted inputs do not give the O(n^2) case.
+
+Input used:
+  - Average case : random array
+  - Best case    : sorted array
+  - Worst case   : reverse-sorted array
+
+ALGORITHM
+---------
+1. Generate a random array of the given size.
+2. Make the sorted copy (best case) and the reverse copy (worst
+   case).
+3. Run Quick Sort and Merge Sort on a copy of each array.
+4. Record the time taken using time.time().
+5. Repeat for sizes 1000, 5000 and 10000.
+6. Print the times.
+
+PROGRAM
+-------
+  import random
+  import time
+
+  def quick_sort(arr):
+      if len(arr) <= 1:
+          return arr
+      pivot = arr[len(arr) // 2]
+      left = [x for x in arr if x < pivot]
+      middle = [x for x in arr if x == pivot]
+      right = [x for x in arr if x > pivot]
+      return quick_sort(left) + middle + quick_sort(right)
+
+  def merge_sort(arr):
+      if len(arr) <= 1:
+          return arr
+      mid = len(arr) // 2
+      left = merge_sort(arr[:mid])
+      right = merge_sort(arr[mid:])
+      return merge(left, right)
+
+  def merge(left, right):
+      result = []
+      i = j = 0
+      while i < len(left) and j < len(right):
+          if left[i] < right[j]:
+              result.append(left[i])
+              i += 1
+          else:
+              result.append(right[j])
+              j += 1
+      result.extend(left[i:])
+      result.extend(right[j:])
+      return result
+
+  def measure_time(sort_func, arr):
+      start = time.time()
+      sort_func(arr)
+      end = time.time()
+      return end - start
+
+  sizes = [1000, 5000, 10000]
+  cases = ["Average", "Best", "Worst"]
+
+  for size in sizes:
+      print(f"\nInput size: {size}")
+      arr_avg = [random.randint(0, size) for _ in range(size)]
+      arr_best = sorted(arr_avg)
+      arr_worst = sorted(arr_avg, reverse=True)
+
+      for case, arr in zip(cases, [arr_avg, arr_best, arr_worst]):
+          time_quick = measure_time(quick_sort, arr.copy())
+          time_merge = measure_time(merge_sort, arr.copy())
+          print(f"{case} Case - Quick Sort: {time_quick:.5f}s, Merge Sort: {time_merge:.5f}s")
+
+OUTPUT
+------
+
+  Input size: 1000
+  Average Case - Quick Sort: 0.00105s, Merge Sort: 0.00123s
+  Best Case - Quick Sort: 0.00060s, Merge Sort: 0.00089s
+  Worst Case - Quick Sort: 0.00059s, Merge Sort: 0.00081s
+
+  Input size: 5000
+  Average Case - Quick Sort: 0.00581s, Merge Sort: 0.00744s
+  Best Case - Quick Sort: 0.00344s, Merge Sort: 0.00495s
+  Worst Case - Quick Sort: 0.00349s, Merge Sort: 0.00481s
+
+  Input size: 10000
+  Average Case - Quick Sort: 0.01231s, Merge Sort: 0.01622s
+  Best Case - Quick Sort: 0.00767s, Merge Sort: 0.01059s
+  Worst Case - Quick Sort: 0.00774s, Merge Sort: 0.01106s
+
+NOTE: Times differ on every run and on every computer, because the
+input is random. Your output will not match these numbers exactly,
+but it should look similar.
+
+RESULT
+------
+Quick Sort and Merge Sort were implemented and their execution
+times were observed for different input sizes. The time grows with
+the input size, and Quick Sort was faster than Merge Sort in these
+runs.
 
 
 ==============================================================
 EXPERIMENT 7
-EXPERIMENT TO PREDICT THE CLASS USING BAYESIAN CLASSIFICATION
+JOB SEQUENCING WITH DEADLINES USING GREEDY STRATEGY
 ==============================================================
 
 AIM
 ---
-To predict the class of a dataset using the Naive Bayes
-classification algorithm.
+To implement Job Sequencing with Deadlines using the Greedy
+strategy.
 
 THEORY
 ------
-Naive Bayes is a probabilistic classification algorithm based on
-Bayes' theorem. It predicts the class of an instance by calculating
-the probability of each possible class based on the given attributes.
+Each job has a deadline and a profit. Every job takes one unit of
+time, and only one job can run at a time. A job gives its profit
+only if it is finished on or before its deadline.
 
-It assumes that the attributes are conditionally independent given
-the class.
+Greedy choice: consider the jobs in decreasing order of profit
+and put each job in the latest free slot before its deadline.
 
-Bayes' theorem is expressed as:
-
-  P(C|X) = [ P(X|C) x P(C) ] / P(X)
-
-Where:
-  - P(C|X) : Posterior probability of class C.
-  - P(X|C) : Probability of the attributes given class C.
-  - P(C)   : Prior probability of the class.
-  - P(X)   : Probability of the observed attributes.
-
-Advantages:
-  - Simple and fast.
-  - Works with categorical and numeric attributes.
-  - Effective for many classification tasks and small datasets.
-
-PROCEDURE IN WEKA
------------------
-1. Open WEKA and select Explorer.
-2. Go to Preprocess and load weather.arff.
-3. Ensure that the class attribute is Play with values Yes and No.
-4. Select the Classify tab.
-5. Click Choose -> bayes -> NaiveBayes.
-6. Select 10-fold cross-validation or Use training set.
-7. Click Start.
-8. Observe the classification accuracy, confusion matrix, and other
-   evaluation measures.
+Time complexity: O(n^2) (O(n log n) for sorting plus slot search).
 
 ALGORITHM
 ---------
-1. Calculate the prior probability of each class.
-2. Calculate the conditional probability of each attribute for each
-   class.
-3. Apply Bayes' theorem to calculate the posterior probability.
-4. Compare the probabilities for all classes.
-5. Assign the instance to the class with the highest posterior
-   probability.
+1. Sort the jobs in decreasing order of profit.
+2. Find the maximum deadline and create that many empty slots.
+3. For each job, look for a free slot starting from its deadline
+   and moving backwards.
+4. If a free slot is found, put the job there and add its profit.
+5. If no free slot is found, skip the job.
+6. Print the scheduled jobs and the total profit.
+
+SAMPLE DATASET
+--------------
+Job | Deadline | Profit
+----|----------|-------
+ A  |    7     |   15
+ B  |    2     |   20
+ C  |    5     |   30
+ D  |    3     |   18
+ E  |    4     |   18
+ F  |    5     |   10
+ G  |    2     |   23
+ H  |    7     |   16
+ I  |    3     |   25
+
+SAMPLE CALCULATION
+------------------
+Jobs in decreasing order of profit: C(30), I(25), G(23), B(20),
+D(18), E(18), H(16), A(15), F(10)
+
+  - C (deadline 5) -> slot 5
+  - I (deadline 3) -> slot 3
+  - G (deadline 2) -> slot 2
+  - B (deadline 2) -> slot 1
+  - D (deadline 3) -> no free slot, rejected
+  - E (deadline 4) -> slot 4
+  - H (deadline 7) -> slot 7
+  - A (deadline 7) -> slot 6
+  - F (deadline 5) -> no free slot, rejected
+
+Total profit = 30 + 25 + 23 + 20 + 18 + 16 + 15 = 147
+
+PROGRAM
+-------
+  class Job:
+      def __init__(self, job_id, deadline, profit):
+          self.id = job_id
+          self.deadline = deadline
+          self.profit = profit
+
+  def job_sequencing(jobs):
+      # Step 1: sort jobs by decreasing profit
+      jobs.sort(key=lambda x: x.profit, reverse=True)
+
+      n = max(job.deadline for job in jobs)
+      result = [None] * n
+      total_profit = 0
+
+      # Step 2: put each job in the latest free slot before its deadline
+      for job in jobs:
+          for slot in range(job.deadline - 1, -1, -1):
+              if result[slot] is None:
+                  result[slot] = job.id
+                  total_profit += job.profit
+                  break
+
+      scheduled_jobs = [job_id for job_id in result if job_id is not None]
+      return scheduled_jobs, total_profit
+
+  jobs = [
+      Job('A', 7, 15),
+      Job('B', 2, 20),
+      Job('C', 5, 30),
+      Job('D', 3, 18),
+      Job('E', 4, 18),
+      Job('F', 5, 10),
+      Job('G', 2, 23),
+      Job('H', 7, 16),
+      Job('I', 3, 25)
+  ]
+
+  scheduled_jobs, total_profit = job_sequencing(jobs)
+  print("Scheduled Jobs:", scheduled_jobs)
+  print("Total Profit:", total_profit)
+
+OUTPUT
+------
+  Scheduled Jobs: ['B', 'G', 'I', 'E', 'C', 'A', 'H']
+  Total Profit: 147
 
 RESULT
 ------
-The Naive Bayes classifier was executed successfully in WEKA to
-predict the class of the given dataset.
-
-
-==============================================================
-EXPERIMENT 8
-EXPERIMENT TO PREDICT THE CLASS USING THE k-NEAREST NEIGHBOR
-CLASSIFICATION
-==============================================================
-
-AIM
----
-To predict the class of a dataset using the k-Nearest Neighbor (KNN)
-algorithm.
-
-THEORY
-------
-K-Nearest Neighbor (KNN) is a supervised machine learning algorithm
-used for classification and regression. It classifies a new data
-point by finding the k nearest data points and assigning the majority
-class among those neighbors.
-
-The Euclidean distance between two points is calculated as:
-
-  d(x, y) = sqrt( sum from i=1 to n of (xi - yi)^2 )
-
-Where xi and yi are the feature values of two data points.
-
-Advantages:
-  - Simple and easy to implement.
-  - Does not require an explicit model-building phase.
-  - Can classify data with irregular decision boundaries.
-
-Limitations:
-  - Computationally expensive for large datasets.
-  - Sensitive to irrelevant features and feature scaling.
-  - Performance depends on the choice of k.
-
-PROCEDURE IN WEKA
------------------
-1.  Open WEKA and select Explorer.
-2.  Go to Preprocess -> Open file.
-3.  Load the iris.arff dataset.
-4.  Select the Classify tab.
-5.  Click Choose -> lazy -> IBk.
-6.  Open the classifier options and set the value of k.
-7.  Test different values of k, such as 1, 3, 5, 7 and 9.
-8.  Select 10-fold cross-validation.
-9.  Click Start.
-10. Record the accuracy, confusion matrix, precision, recall and
-    F-measure.
-
-ALGORITHM
----------
-1. Choose the value of k.
-2. Calculate the distance between the test instance and all training
-   instances.
-3. Sort the instances according to their distances.
-4. Select the k nearest neighbors.
-5. Count the class labels of these neighbors.
-6. Assign the majority class to the test instance.
-
-RESULT
-------
-The KNN algorithm was executed successfully in WEKA using the IBk
-classifier, and its classification performance was evaluated for
-different values of k.
+The jobs were scheduled using the Greedy strategy. The maximum
+profit obtained is 147.
 
 
 ==============================================================
 EXPERIMENT 9
-EXPERIMENT TO IMPLEMENT WEIGHT AND BIAS UPDATING USING THE
-BACKPROPAGATION NEURAL NETWORK
+0/1 KNAPSACK PROBLEM USING DYNAMIC PROGRAMMING
 ==============================================================
 
 AIM
 ---
-To implement weight and bias updating using a backpropagation neural
-network.
+To write a program to solve the 0/1 Knapsack problem using
+Dynamic Programming.
 
 THEORY
 ------
-A Backpropagation Neural Network (BPNN) is a supervised learning
-model consisting of input, hidden and output layers. It learns by
-adjusting the weights and biases to minimize the difference between
-predicted and actual outputs.
+In the 0/1 Knapsack problem, each item must be taken completely or
+not taken at all. Greedy does not always give the best answer, so
+Dynamic Programming is used.
 
-The training process consists of four main steps:
-  1. Forward pass: Inputs pass through the network to produce an
-     output.
-  2. Error computation: The difference between predicted and target
-     values is calculated.
-  3. Backward pass: The error gradients are propagated backward
-     using the chain rule.
-  4. Weight and bias update: Parameters are adjusted using gradient
-     descent.
+dp[i][w] = maximum value using the first i items with capacity w.
 
-The weight update equation is:
+  If weight[i-1] <= w:
+      dp[i][w] = max( dp[i-1][w],
+                      value[i-1] + dp[i-1][w - weight[i-1]] )
+  Else:
+      dp[i][w] = dp[i-1][w]
 
-  w_new = w_old - (eta x dE/dw)
-
-The bias update equation is:
-
-  b_new = b_old - (eta x dE/db)
-
-Where:
-  - w   = weight
-  - b   = bias
-  - eta = learning rate
-  - E   = error function
-
-In WEKA, the MultilayerPerceptron classifier implements a
-feedforward neural network trained using backpropagation.
-
-PROCEDURE IN WEKA
------------------
-1.  Open WEKA and select Explorer.
-2.  Go to Preprocess -> Open file.
-3.  Load a dataset such as iris.arff.
-4.  Ensure that the class attribute is set correctly.
-5.  Select the Classify tab.
-6.  Click Choose -> functions -> MultilayerPerceptron.
-7.  Open the classifier parameters.
-8.  Configure the following settings:
-      - Learning rate : 0.3 (default)
-      - Momentum      : 0.2 (default)
-      - Training time : 500 epochs (default)
-      - Hidden layers : Default or a suitable alternative
-9.  Select 10-fold cross-validation or a percentage split, such as
-    70% training and 30% testing.
-10. Click Start.
-11. Observe the accuracy, confusion matrix, error rate and network
-    output.
+Time complexity  : O(n x W)
+Space complexity : O(n x W)
 
 ALGORITHM
 ---------
-1. Initialize the weights and biases.
-2. Pass the input through the network.
-3. Calculate the predicted output.
-4. Compute the error between the predicted and target outputs.
-5. Propagate the error backward through the network.
-6. Update the weights and biases using gradient descent.
-7. Repeat the process until the stopping condition is reached.
+1. Create a table dp of size (n + 1) x (W + 1) filled with 0.
+2. For each item i from 1 to n:
+     For each capacity w from 0 to W:
+       a. If the item fits, take the maximum of skipping it and
+          taking it.
+       b. Otherwise, copy the value from the row above.
+3. The answer is dp[n][W].
+
+SAMPLE DATASET
+--------------
+Item | Value | Weight
+-----|-------|-------
+  1  |   60  |   10
+  2  |  100  |   20
+  3  |  120  |   30
+
+Capacity = 50
+
+PROGRAM
+-------
+  def knapsack_dp(values, weights, capacity):
+      n = len(values)
+      dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+
+      for i in range(1, n + 1):
+          for w in range(capacity + 1):
+              if weights[i - 1] <= w:
+                  dp[i][w] = max(
+                      dp[i - 1][w],                                         # skip item
+                      values[i - 1] + dp[i - 1][w - weights[i - 1]]         # take item
+                  )
+              else:
+                  dp[i][w] = dp[i - 1][w]
+      return dp[n][capacity]
+
+  values = [60, 100, 120]
+  weights = [10, 20, 30]
+  W = 50
+
+  print("Maximum value in Knapsack =", knapsack_dp(values, weights, W))
+
+OUTPUT
+------
+  Maximum value in Knapsack = 220
 
 RESULT
 ------
-The backpropagation neural network was implemented successfully
-using WEKA's MultilayerPerceptron classifier to train the model and
-evaluate its classification performance.
-
-
-==============================================================
-EXPERIMENT 10
-DEMONSTRATION OF CLUSTERING PROCESS USING THE K-MEANS ALGORITHM
-==============================================================
-
-AIM
----
-To demonstrate the clustering process using the K-Means algorithm.
-
-THEORY
-------
-Clustering is an unsupervised learning technique used to group
-similar data points into clusters. K-Means is a widely used
-clustering algorithm that divides a dataset into k clusters based on
-the similarity of data points.
-
-Each cluster is represented by a centroid, which is the mean of the
-points belonging to that cluster.
-
-ALGORITHM
----------
-1. Select the number of clusters k.
-2. Initialize k centroids.
-3. Calculate the distance between each data point and the centroids.
-4. Assign each point to its nearest centroid.
-5. Recalculate each centroid as the mean of the points assigned to
-   it.
-6. Repeat the assignment and centroid calculation steps until the
-   centroids no longer change significantly.
-
-PROCEDURE IN WEKA
------------------
-1.  Open WEKA and select Explorer.
-2.  Go to Preprocess -> Open file.
-3.  Load iris.arff or another suitable dataset.
-4.  Optionally remove the class attribute because clustering is
-    unsupervised.
-5.  Select the Cluster tab.
-6.  Click Choose -> SimpleKMeans.
-7.  Open the algorithm options and configure:
-      - Number of clusters : 3 for the Iris dataset.
-      - Seed               : 10 (default).
-      - Distance function  : EuclideanDistance (default).
-8.  Click OK.
-9.  Select Use training set to cluster the entire dataset.
-10. Click Start.
-11. Observe the cluster assignments and cluster centroids in the
-    output.
-
-ADVANTAGES
-----------
-  - Simple to understand and implement.
-  - Efficient for relatively large datasets.
-  - Helps discover natural groupings in unlabeled data.
-
-LIMITATIONS
------------
-  - The number of clusters must be specified in advance.
-  - Initial centroid selection can affect the result.
-  - It can be sensitive to outliers and feature scaling.
-
-RESULT
-------
-The K-Means clustering algorithm was executed successfully using
-WEKA's SimpleKMeans clusterer to group similar data points into
-clusters.
+The 0/1 Knapsack problem was solved using Dynamic Programming. The
+maximum value is 220 (items of weight 20 and 30).
 
 
 ==============================================================
 EXPERIMENT 11
-EXPERIMENT TO SUMMARIZE AND VISUALIZE VARIOUS DATASETS
+0/1 KNAPSACK PROBLEM USING BACKTRACKING
 ==============================================================
 
 AIM
 ---
-To summarize and visualize various datasets using the WEKA tool.
+To use the Backtracking strategy to solve the 0/1 Knapsack
+problem.
 
 THEORY
 ------
-Data summarization and visualization are important steps in data
-mining. They help us understand the structure, distribution and
-characteristics of a dataset before applying machine learning
-algorithms.
+Backtracking tries all choices step by step. For every item there
+are two choices:
+  - Include the item (if it fits).
+  - Exclude the item.
 
-WEKA provides tools to display attribute statistics, identify
-missing values and visualize the distribution of data using
-histograms.
+The recursion explores both choices, and the better result is
+returned. If an item is too heavy, only the exclude choice is
+possible.
 
-The Preprocess tab displays information such as:
-  - Attribute type: Numeric or nominal.
-  - Number of missing values.
-  - Number of distinct values.
-  - Minimum and maximum values.
-  - Mean and standard deviation for numeric attributes.
-  - Class distribution for categorical attributes.
+This forms a state-space tree of depth n.
 
-PROCEDURE IN WEKA
------------------
-1.  Open the WEKA GUI Chooser.
-2.  Click Explorer.
-3.  Select the Preprocess tab.
-4.  Click Open file.
-5.  Load a dataset in .arff or .csv format.
-6.  Observe the list of attributes displayed on the left side.
-7.  Select an attribute to view its statistical summary.
-8.  Check the minimum, maximum, mean, standard deviation and missing
-    values where applicable.
-9.  Click an attribute to view its histogram.
-10. Observe the distribution of values and the class-based color
-    coding.
-11. Click Visualize All, if available, to view multiple attribute
-    distributions simultaneously.
+Time complexity: O(2^n) in the worst case.
 
-EXAMPLE
+ALGORITHM
+---------
+1. If there are no items left or the capacity is 0, return 0.
+2. If the weight of the last item is more than the capacity,
+   skip it and solve for the remaining items.
+3. Otherwise, calculate two values:
+     a. Include = value of item + result for remaining capacity
+     b. Exclude = result without the item
+4. Return the maximum of the two values.
+
+SAMPLE DATASET
+--------------
+Item | Value | Weight
+-----|-------|-------
+  1  |   60  |   10
+  2  |  100  |   20
+  3  |  120  |   30
+
+Capacity = 50
+
+PROGRAM
 -------
-Consider a weather dataset containing the following attributes:
+  def knapsack_backtrack(values, weights, capacity, n):
+      if n == 0 or capacity == 0:                 # no items or no space left
+          return 0
 
-Attribute    | Type
--------------|---------
-Outlook      | Nominal
-Temperature  | Numeric
-Humidity     | Numeric
-Windy        | Nominal
-Play         | Nominal
+      if weights[n - 1] > capacity:               # item too heavy, skip it
+          return knapsack_backtrack(values, weights, capacity, n - 1)
 
-WEKA displays statistical summaries for Temperature and Humidity and
-category distributions for Outlook, Windy and Play.
+      include = values[n - 1] + knapsack_backtrack(values, weights, capacity - weights[n - 1], n - 1)
+      exclude = knapsack_backtrack(values, weights, capacity, n - 1)
+      return max(include, exclude)
+
+  values = [60, 100, 120]
+  weights = [10, 20, 30]
+  W = 50
+
+  print("Maximum value in Knapsack =", knapsack_backtrack(values, weights, W, len(values)))
+
+OUTPUT
+------
+  Maximum value in Knapsack = 220
 
 RESULT
 ------
-The dataset was successfully summarized and visualized using WEKA.
-Attribute statistics and histograms were used to understand the
-distribution and characteristics of the dataset.
+The 0/1 Knapsack problem was solved using Backtracking. The
+maximum value is 220, the same as the Dynamic Programming answer.
 
 
 ==============================================================
 EXPERIMENT 12
-EXPERIMENT TO DEMONSTRATE VARIOUS DATA PRE-PROCESSING TECHNIQUES
+TRAVELLING SALES PERSON PROBLEM USING BRANCH AND BOUND
 ==============================================================
 
 AIM
 ---
-To demonstrate various data pre-processing techniques using WEKA.
+To implement the Travelling Sales Person (TSP) problem using the
+Branch and Bound approach.
 
 THEORY
 ------
-Data preprocessing is the process of preparing raw data for data
-mining and machine learning. It improves data quality by handling
-missing values, scaling attributes, converting data formats and
-removing unnecessary attributes.
+The Travelling Sales Person problem is to find the shortest tour
+that visits every city exactly once and returns to the starting
+city.
 
-The following preprocessing techniques are covered in the lab
-manual.
+Branch and Bound:
+  - BRANCH: Build the tour city by city. Every choice of the next
+    city creates a new branch.
+  - BOUND: Keep the cost of the best complete tour found so far.
+    If the cost of a partial tour is already greater than or equal
+    to this best cost, that branch cannot give a better answer, so
+    it is cut off (pruned).
 
-1. HANDLING MISSING VALUES
---------------------------
-Missing values are values that are not available in the dataset. In
-WEKA, missing values are represented by ? in ARFF data.
+Pruning avoids checking many useless tours. The worst case is
+still O(n!), but it is usually much faster than checking every
+tour.
 
-The ReplaceMissingValues filter replaces:
-  - Missing numeric values with the mean.
-  - Missing nominal values with the mode.
+ALGORITHM
+---------
+1. Start from city 0 with cost 0 and best cost = infinity.
+2. If the current cost is >= best cost, stop (prune).
+3. If all cities are visited, add the cost of returning to city 0.
+   If it is less than the best cost, save it as the new best.
+4. Otherwise, try every unvisited city as the next city and repeat
+   from step 2.
+5. Print the minimum cost and the path.
 
-WEKA filter path:
-  Choose -> unsupervised -> attribute -> ReplaceMissingValues
+SAMPLE DATASET (Cost Matrix)
+----------------------------
+      | 0  | 1  | 2  | 3
+------|----|----|----|----
+  0   | 0  | 10 | 15 | 20
+  1   | 10 | 0  | 35 | 25
+  2   | 15 | 35 | 0  | 30
+  3   | 20 | 25 | 30 | 0
 
-Procedure:
-  1. Open WEKA Explorer.
-  2. Load a dataset containing missing values.
-  3. Select the Preprocess tab.
-  4. Click Choose under Filter.
-  5. Select ReplaceMissingValues.
-  6. Click Apply.
+Tour 0 -> 1 -> 3 -> 2 -> 0 = 10 + 25 + 30 + 15 = 80
 
-2. NORMALIZATION
-----------------
-Normalization rescales numeric attributes to a specified range,
-commonly [0, 1].
+PROGRAM
+-------
+  import math
 
-A common min-max normalization formula is:
+  graph = [
+      [0, 10, 15, 20],
+      [10, 0, 35, 25],
+      [15, 35, 0, 30],
+      [20, 25, 30, 0]
+  ]
+  n = len(graph)
 
-  x' = (x - x_min) / (x_max - x_min)
+  best_cost = math.inf
+  best_path = []
 
-WEKA filter path:
-  Choose -> unsupervised -> attribute -> Normalize
+  def branch_and_bound(path, visited, cost):
+      global best_cost, best_path
 
-Procedure:
-  1. Load the dataset.
-  2. Select the Normalize filter.
-  3. Click Apply.
-  4. Observe the transformed values.
+      if cost >= best_cost:                 # BOUND: cannot beat the best, prune
+          return
 
-3. STANDARDIZATION
-------------------
-Standardization transforms numeric attributes to have approximately
-zero mean and unit variance.
+      if len(path) == n:                    # all cities visited, return to start
+          total = cost + graph[path[-1]][0]
+          if total < best_cost:
+              best_cost = total
+              best_path = path + [0]
+          return
 
-  z = (x - mu) / sigma
+      for city in range(n):                 # BRANCH: try every unvisited city
+          if city not in visited:
+              branch_and_bound(path + [city], visited | {city},
+                               cost + graph[path[-1]][city])
 
-Where mu is the mean and sigma is the standard deviation.
+  branch_and_bound([0], {0}, 0)
 
-WEKA filter path:
-  Choose -> unsupervised -> attribute -> Standardize
+  print("Minimum cost:", best_cost)
+  print("Path:", tuple(best_path))
 
-Procedure:
-  1. Load the dataset.
-  2. Select the Standardize filter.
-  3. Click Apply.
-  4. Observe the standardized attribute values.
-
-4. DISCRETIZATION
------------------
-Discretization converts numeric attributes into nominal or
-categorical attributes by dividing numeric values into intervals.
-
-For example, numeric marks can be divided into categories such as
-Low, Medium and High.
-
-WEKA filter path:
-  Choose -> unsupervised -> attribute -> Discretize
-
-Procedure:
-  1. Load the dataset.
-  2. Select the Discretize filter.
-  3. Click Apply.
-  4. Observe the converted attribute values.
-
-5. REMOVING UNNECESSARY ATTRIBUTES
-----------------------------------
-Unnecessary attributes, such as serial numbers, IDs or irrelevant
-columns, can be removed to simplify the dataset.
-
-WEKA filter path:
-  Choose -> unsupervised -> attribute -> Remove
-
-Procedure:
-  1. Load the dataset.
-  2. Select the Remove filter.
-  3. Open the filter settings.
-  4. Specify the attribute indices to remove.
-  5. Click Apply.
-
-OVERALL PROCEDURE
------------------
-1. Open WEKA Explorer.
-2. Load a dataset using Preprocess -> Open file.
-3. Inspect the attribute types, missing values and distinct values.
-4. Apply the required preprocessing filters.
-5. Compare the dataset before and after applying each filter.
-6. Save the processed dataset if required.
+OUTPUT
+------
+  Minimum cost: 80
+  Path: (0, 1, 3, 2, 0)
 
 RESULT
 ------
-Various data preprocessing techniques, including missing-value
-replacement, normalization, standardization, discretization and
-attribute removal, were demonstrated successfully using WEKA.
+The TSP problem was solved using Branch and Bound. The minimum
+cost of the tour is 80 and the path is 0 -> 1 -> 3 -> 2 -> 0.
+
 
 ==============================================================
                         END OF MANUAL
